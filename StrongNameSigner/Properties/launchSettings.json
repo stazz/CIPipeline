@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "StrongNameSigner": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\Work\\OSS\\UtilPack\\UtilPackGit\\Keys\\UtilPack.snk C:\\Work\\OSS\\UtilPack\\output\\bin\\UtilPack\\Release\\net45\\UtilPack.dll"
+    }
+  }
+}
