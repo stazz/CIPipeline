@@ -13,14 +13,14 @@ cp "${SCRIPTDIR}/CISupport.props" "${GIT_ROOT}/CISupport.props"
 cp "${SCRIPTDIR}/NuGet.Config" "${GIT_ROOT}/NuGet.Config.ci"
 
 # Create key
+set -v
+set +x
 if [[ "${ASSEMBLY_SIGN_KEY}" ]]; then
   mkdir -p "${BASE_ROOT}/secrets"
-  set -v
-  set +x
   echo "${ASSEMBLY_SIGN_KEY}" | base64 -d > "${BASE_ROOT}/secrets/assembly_key.snk"
-  set +v
-  set -x
 fi
+set +v
+set -x
 
 if [[ "${RELATIVE_NUGET_PACKAGE_DIR}" ]]; then
   NUGET_PACKAGE_DIR=$(readlink -f "${BASE_ROOT}/${RELATIVE_NUGET_PACKAGE_DIR}")
