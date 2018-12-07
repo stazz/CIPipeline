@@ -14,7 +14,7 @@ environment:
   RELATIVE_CS_OUTPUT: 'output/'
   CI_FOLDER: 'CIPipeline'
 
-  # Any additional readwrite volumes that should be visible within docker
+  # Any additional readonly volumes that should be visible within docker
 #  ADDITIONAL_VOLUME_DIRECTORIES: 'v4-ref-assemblies'
 
 # The version of .NET Core (and Docker image)

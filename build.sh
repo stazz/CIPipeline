@@ -66,6 +66,7 @@ docker run \
   -v "${SUCCESS_DIR}/:/success/:rw" \
   -u 0 \
   -e "THIS_TFM=netcoreapp${DOTNET_VERSION}" \
+  -e "CI_FOLDER=${CI_FOLDER}" \
   ${ADDITIONAL_VOLUMES_STRING} \
   "microsoft/dotnet:${DOTNET_VERSION}-sdk-alpine" \
   "${BUILD_COMMAND[@]}"
