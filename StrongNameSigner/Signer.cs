@@ -227,7 +227,6 @@ namespace StrongNameSigner
          var bytes = new Byte[BUFFER_SIZE];
          using ( var hasher = IncrementalHash.CreateHash( HashAlgorithmName.SHA1 ) )
          {
-            var dummy = hashableRanges.ToArray();
             foreach ( var range in hashableRanges.OrderBy( r => r.StartFromBeginning ) )
             {
                var start = range.StartFromBeginning;
