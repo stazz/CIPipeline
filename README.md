@@ -38,8 +38,11 @@ The CI pipeline scripts assume the following folder structure to exist:
 All of the code is within `Source` folder in the git repository root, and the `Source` folder has two folders in it, `Code` and `Tests`.
 The `Code` has all the actual projects that the git repository contains, each in its own folder.
 The `Tests` folder has all the test projects for the projects in `Code` folder.
+All of the `.csproj` files within both `Code` and `Tests` folders must have the following import: `<Import Project="$(CIPropsFilePath)" Condition=" '$(CIPropsFilePath)' != '' and Exists('$(CIPropsFilePath)') " />`.
+
 The `Directory.Build.props` file should exist in `Source` folder, and should either be copy of `Directory.Build.props.template` file in this repository, or should include it via `<Import ... />` element.
 The purpose of this `Directory.Build.props` is to make all output go somewhere else than the git repository, as the git repository is mounted as readonly-volume to Docker.
+
 
 # Usage
 The scripts should be executed in the following order:

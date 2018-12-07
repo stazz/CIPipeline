@@ -16,7 +16,8 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(IsCIBuild)' == 'true' ">
-    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)/../../secrets/assembly_key.snk</AssemblyOriginatorKeyFile>
-    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFilePath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/../../secrets/assembly_key.snk'))</AssemblyOriginatorKeyFilePath>
+    <AssemblyOriginatorKeyFile Condition="Exists('$(AssemblyOriginatorKeyFilePath)')">$(AssemblyOriginatorKeyFilePath)</AssemblyOriginatorKeyFile>
+    <SignAssembly Condition=" '$(AssemblyOriginatorKeyFile)' != '' ">true</SignAssembly>
   </PropertyGroup>
 </Project>

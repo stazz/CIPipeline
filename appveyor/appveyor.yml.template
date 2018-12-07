@@ -1,0 +1,68 @@
+version: '1.0.{build}-{branch}'
+image: Ubuntu1804
+services:
+  - docker
+cache:
+  - 'nuget-package-dir'
+  - 'docker-images'
+
+# Uncomment if you build against net40
+#  - 'v4-ref-assemblies'
+
+environment:
+  RELATIVE_NUGET_PACKAGE_DIR: 'nuget-package-dir/'
+  RELATIVE_CS_OUTPUT: 'output/'
+  CI_FOLDER: 'CIPipeline'
+
+  # Any additional readwrite volumes that should be visible within docker
+#  ADDITIONAL_VOLUME_DIRECTORIES: 'v4-ref-assemblies'
+
+# The version of .NET Core (and Docker image)
+  DOTNET_VERSION: '2.1'
+
+# Where to publish NuGet packages:
+  DEPLOY_NUGET_SOURCE: 'https://api.nuget.org/v3/index.json'
+
+# The key to use for publishing NuGet packages:
+#  DEPLOY_NUGET_API_KEY:
+#    secure: appveyor-encoded-value
+
+# For when no symbols should be pushed:
+#  DEPLOY_NUGET_NO_SYMBOLS: true
+
+# For when need to sign with secret sign key:
+#  ASSEMBLY_SIGN_KEY:
+#    secure: appveyor-encoded-value
+  
+init:
+  - sh: git config --global core.autocrlf false
+  - sh: appveyor UpdateBuild -Version "build-${APPVEYOR_REPO_COMMIT:0:8}-${APPVEYOR_BUILD_NUMBER}"
+install:
+# Move all git stuff to the dedicated subdirectory called 'git'
+  - sh: 'mkdir "${APPVEYOR_BUILD_FOLDER}/git"'
+  - sh: 'git -C "${APPVEYOR_BUILD_FOLDER}" ls-tree --name-only -z HEAD | xargs --null mv -t "${APPVEYOR_BUILD_FOLDER}/git"'
+
+# Uncomment if you build against net40
+#  - sh: '"${APPVEYOR_BUILD_FOLDER}/git/${CI_FOLDER}/download-net40-ref-assemblies.sh" "${APPVEYOR_BUILD_FOLDER}/v4-ref-assemblies"'
+
+before_build:
+# Download the docker image if needed, or update to newest if already exists.
+  - sh: '"${APPVEYOR_BUILD_FOLDER}/git/${CI_FOLDER}/appveyor/sync_docker_image.sh" "microsoft/dotnet:${DOTNET_VERSION}-sdk-alpine" "${APPVEYOR_BUILD_FOLDER}/docker-images/dotnet-sdk.tar"'
+
+build_script:
+  - sh: '"${APPVEYOR_BUILD_FOLDER}/git/${CI_FOLDER}/build.sh"'
+  - sh: 'sudo chown -R `id -u` "${APPVEYOR_BUILD_FOLDER}/${RELATIVE_CS_OUTPUT}"'
+  - sh: 'sudo chown -R `id -u` "${APPVEYOR_BUILD_FOLDER}/${RELATIVE_NUGET_PACKAGE_DIR}"'
+
+test_script:
+  - sh: '"${APPVEYOR_BUILD_FOLDER}/git/${CI_FOLDER}/test.sh" "${APPVEYOR_BUILD_FOLDER}/git/${CI_FOLDER}/appveyor/add_tests.sh"'
+  - sh: 'sudo chown -R `id -u` "${APPVEYOR_BUILD_FOLDER}/${RELATIVE_CS_OUTPUT}"'
+  - sh: 'sudo chown -R `id -u` "${APPVEYOR_BUILD_FOLDER}/${RELATIVE_NUGET_PACKAGE_DIR}"'
+
+after_test:
+  - sh: '"${APPVEYOR_BUILD_FOLDER}/git/${CI_FOLDER}/package.sh" "${APPVEYOR_BUILD_FOLDER}/git/${CI_FOLDER}/appveyor/upload_packages.sh"'
+  - sh: 'sudo chown -R `id -u` "${APPVEYOR_BUILD_FOLDER}/${RELATIVE_CS_OUTPUT}"'
+  - sh: 'sudo chown -R `id -u` "${APPVEYOR_BUILD_FOLDER}/${RELATIVE_NUGET_PACKAGE_DIR}"'
+  
+deploy_script:
+  - sh: '${APPVEYOR_BUILD_FOLDER}/git/${CI_FOLDER}/deploy.sh'
