@@ -27,17 +27,17 @@ if [[ "${PACKAGE_SCRIPT_WITHIN_CONTAINER}" ]]; then
   PACKAGE_COMMAND=("/repo-dir/contents/${PACKAGE_SCRIPT_WITHIN_CONTAINER}" "${PACKAGE_COMMAND[@]}")
 fi
 
+ADDITIONAL_VOLUMES=()
 if [[ "${ADDITIONAL_VOLUME_DIRECTORIES}" ]]; then
   IFS=', ' read -r -a volume_dir_array <<< "${ADDITIONAL_VOLUME_DIRECTORIES}"
-  ADDITIONAL_VOLUMES_STRING=
   for volume_dir in "${volume_dir_array[@]}"
   do
-    if [[ "${ADDITIONAL_VOLUMES_STRING}" ]]; then
-      ADDITIONAL_VOLUMES_STRING+=" "
-    fi
-    
-    ADDITIONAL_VOLUMES_STRING+="-v ${BASE_ROOT}/${volume_dir}:/repo-dir/${volume_dir}/:ro"
+    ADDITIONAL_VOLUMES+=('-v' "${BASE_ROOT}/${volume_dir}:/repo-dir/${volume_dir}/:ro")
   done
+fi
+
+if [[ -f "${BASE_ROOT}/secrets/assembly_key.snk" ]]; then
+  ADDITIONAL_VOLUMES+=('-v' "${BASE_ROOT}/secrets/assembly_key.snk:/repo-dir/secrets/assembly_key.snk:ro")
 fi
 
 # Run package code within docker
@@ -47,12 +47,12 @@ docker run \
   -v "${GIT_ROOT}/:/repo-dir/contents/:ro" \
   -v "${CS_OUTPUT}/:/repo-dir/BuildTarget/:rw" \
   -v "${NUGET_PACKAGE_DIR}/:/root/.nuget/packages/:rw" \
-  -v "${BASE_ROOT}/secrets/assembly_key.snk:/repo-dir/secrets/assembly_key.snk:ro" \
   -v "${SUCCESS_DIR}/:/success/:rw" \
+  "${ADDITIONAL_VOLUMES[@]}" \
   -u 0 \
   -e "THIS_TFM=netcoreapp${DOTNET_VERSION}" \
   -e "CI_FOLDER=${CI_FOLDER}" \
-  ${ADDITIONAL_VOLUMES_STRING} \
+  -e "GIT_COMMIT_HASH=${GIT_COMMIT_HASH}" \
   "microsoft/dotnet:${DOTNET_VERSION}-sdk-alpine" \
   "${PACKAGE_COMMAND[@]}"
 

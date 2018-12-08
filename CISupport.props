@@ -1,8 +1,50 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Support for building with dotnet in Linux -->
   <!-- We can't do this in Directory.Build.props, as NuGetPackageRoot property will evaluate to empty string there. -->
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net47' ">
+    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.7" Version="1.0.1" ExcludeAssets="All" PrivateAssets="All" />
+  </ItemGroup>
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net47' ">
+    <FrameworkPathOverride>$(NuGetPackageRoot)microsoft.targetingpack.netframework.v4.7\1.0.1\lib\net47\</FrameworkPathOverride>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net471' ">
+    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.7.1" Version="1.0.0" ExcludeAssets="All" PrivateAssets="All" />
+  </ItemGroup>
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net471' ">
+    <FrameworkPathOverride>$(NuGetPackageRoot)microsoft.targetingpack.netframework.v4.7.1\1.0.0\lib\net471\</FrameworkPathOverride>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net472' ">
+    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.7.2" Version="1.0.0" ExcludeAssets="All" PrivateAssets="All" />
+  </ItemGroup>
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net471' ">
+    <FrameworkPathOverride>$(NuGetPackageRoot)microsoft.targetingpack.netframework.v4.7.2\1.0.0\lib\net472\</FrameworkPathOverride>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
+    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.6" Version="1.0.1" ExcludeAssets="All" PrivateAssets="All" />
+  </ItemGroup>
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net46' ">
+    <FrameworkPathOverride>$(NuGetPackageRoot)microsoft.targetingpack.netframework.v4.6\1.0.1\lib\net46\</FrameworkPathOverride>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
+    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.6.1" Version="1.0.1" ExcludeAssets="All" PrivateAssets="All" />
+  </ItemGroup>
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net461' ">
+    <FrameworkPathOverride>$(NuGetPackageRoot)microsoft.targetingpack.netframework.v4.6.1\1.0.1\lib\net461\</FrameworkPathOverride>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
+    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.6.2" Version="1.0.1" ExcludeAssets="All" PrivateAssets="All" />
+  </ItemGroup>
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net462' ">
+    <FrameworkPathOverride>$(NuGetPackageRoot)microsoft.targetingpack.netframework.v4.6.2\1.0.1\lib\net462\</FrameworkPathOverride>
+  </PropertyGroup>
+
   <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
-    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.5" Version="1.0.1" ExcludeAssets="All" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.6.1" Version="1.0.1" ExcludeAssets="All" PrivateAssets="All" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net45' ">
     <FrameworkPathOverride>$(NuGetPackageRoot)microsoft.targetingpack.netframework.v4.5\1.0.1\lib\net45\</FrameworkPathOverride>
@@ -14,7 +56,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PackageVersion>$(PackageVersion)+$(CIPackageVersionSuffix)</PackageVersion>
+    <PackageVersion Condition=" '$(PackageVersion)' != '' ">$(PackageVersion)+$(CIPackageVersionSuffix)</PackageVersion>
     <!-- Using SemVer 2.0.0 implies client version 4.3 or higher. Lower clients still might fail, as they read package version before min client version.
          See https://docs.microsoft.com/en-us/nuget/reference/errors-and-warnings/nu5105 , https://github.com/NuGet/Home/wiki/SemVer-2.0.0-support . -->
     <!-- But pushing to nuget.org with this min version causes error, and it seems other packages don't use this anyway. -->
