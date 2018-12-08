@@ -5,7 +5,7 @@ set -xe
 DOCKER_IMAGE_NAME="$1"
 DOCKER_IMAGE_FILE="$2"
 
-mkdir -p "$(basename "${DOCKER_IMAGE_FILE}")"
+mkdir -p "$(dirname "${DOCKER_IMAGE_FILE}")"
 # First, check if the save image file exists
 if [[ -f "${DOCKER_IMAGE_FILE}" ]]; then
   # Load image
