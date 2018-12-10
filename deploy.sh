@@ -81,7 +81,6 @@ if [[ "${GIT_COMMIT_HASH}" == "${COMMIT_HASH_IN_MASTER}" ]]; then
       "microsoft/dotnet:${DOTNET_VERSION}-sdk-alpine" \
       dotnet nuget push \
       '*.nupkg' \
-      --force-english-output \
       "${ADDITIONAL_PUSH_ARGS[@]}"
 
     set +v
