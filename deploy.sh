@@ -64,9 +64,11 @@ if [[ "${GIT_COMMIT_HASH}" == "${COMMIT_HASH_IN_MASTER}" ]]; then
     set +x
 
     if [[ "${DEPLOY_NUGET_API_KEY}" ]]; then
+      echo 'Adding API key from environment variable'
       ADDITIONAL_PUSH_ARGS+=('--api-key' "${DEPLOY_NUGET_API_KEY}")
     fi
     if [[ "${DEPLOY_NUGET_SYMBOL_API_KEY}" ]]; then
+      echo 'Adding Symbol API key from environment variable'
       ADDITIONAL_PUSH_ARGS+=('--symbol-api-key' "${DEPLOY_NUGET_SYMBOL_API_KEY}")
     fi
 
@@ -78,9 +80,9 @@ if [[ "${GIT_COMMIT_HASH}" == "${COMMIT_HASH_IN_MASTER}" ]]; then
       -w "/push-dir/content" \
       "microsoft/dotnet:${DOTNET_VERSION}-sdk-alpine" \
       dotnet nuget push \
-      '*.nupkg' \
       --force-english-output \
-      "${ADDITIONAL_PUSH_ARGS[@]}"
+      "${ADDITIONAL_PUSH_ARGS[@]}" \
+      '*.nupkg'
 
     set +v
     set -x
