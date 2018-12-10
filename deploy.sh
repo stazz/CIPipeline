@@ -52,7 +52,9 @@ if [[ "${GIT_COMMIT_HASH}" == "${COMMIT_HASH_IN_MASTER}" ]]; then
       ADDITIONAL_PUSH_ARGS+=('--symbol-source' "${DEPLOY_NUGET_SYMBOL_SOURCE}")
     fi
     if [[ "${DEPLOY_NUGET_NO_SYMBOLS}" ]]; then
-      ADDITIONAL_PUSH_ARGS+=('--no-symbols')
+      # For some reason, --no-symbols wants an argument.
+      # If we don't have this extra argument, the push will think, under certain circumstances, that the api key was not provided...
+      ADDITIONAL_PUSH_ARGS+=('--no-symbols' 'true')
     fi
 
     if [[ "${DEPLOY_NUGET_NO_SERVICE_ENDPOINT}" ]]; then
@@ -81,6 +83,7 @@ if [[ "${GIT_COMMIT_HASH}" == "${COMMIT_HASH_IN_MASTER}" ]]; then
       "microsoft/dotnet:${DOTNET_VERSION}-sdk-alpine" \
       dotnet nuget push \
       '*.nupkg' \
+      --force-english-output \
       "${ADDITIONAL_PUSH_ARGS[@]}"
 
     set +v
