@@ -21,7 +21,7 @@ if [[ -f "${DOCKER_IMAGE_FILE}" ]]; then
   DOCKER_IMAGE_ID_NEW="$(docker image inspect -f '{{ .Id }}' "${DOCKER_IMAGE_NAME}")"
 
   # Save if new ID is different (we pulled new version)
-  if [[ "${DOCKER_IMAGE_ID}" != "${DOCKER_IMAGE_ID}" ]]; then
+  if [[ "${DOCKER_IMAGE_ID}" != "${DOCKER_IMAGE_ID_NEW}" ]]; then
     docker image save -o "${DOCKER_IMAGE_FILE}" "${DOCKER_IMAGE_NAME}"
   fi
 else
