@@ -78,4 +78,12 @@
     <!-- Disable warning about SemVer 2.0.0, as per https://github.com/NuGet/Home/issues/4687 . -->
     <NoWarn>$(NoWarn);NU5105</NoWarn>
   </PropertyGroup>
+
+  <Target Condition=" '$(TargetFramework)' == 'net45' or '$(TargetFramework)' == 'net451' or '$(TargetFramework)' == 'net452'" Name="FixSystemXmlCasing" BeforeTargets="Build">
+    <Move
+      Condition="Exists('$(FrameworkPathOverride)System.XML.dll') and !Exists('$(FrameworkPathOverride)System.Xml.dll')"
+      SourceFiles="$(FrameworkPathOverride)System.XML.dll"
+      DestinationFiles="$(FrameworkPathOverride)System.Xml.dll"
+      />
+  </Target>
 </Project>
