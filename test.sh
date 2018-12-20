@@ -47,6 +47,15 @@ if [[ -f "${BASE_ROOT}/secrets/assembly_key.snk" ]]; then
   ADDITIONAL_VOLUMES+=('-v' "${BASE_ROOT}/secrets/assembly_key.snk:/repo-dir/secrets/assembly_key.snk:ro")
 fi
 
+ADDITIONAL_ENV=()
+if [[ "${ADDITIONAL_ENVIRONMENT_VARS}" ]]; then
+  # Crucial to leave unquoted in order to make it work
+  env_array=($ADDITIONAL_ENVIRONMENT_VARS)
+  for var_name in "${env_array[@]}"; do
+    ADDITIONAL_ENV+=('-e' "${var_name}=${!var_name}")
+  done
+fi
+
 # Run tests code within docker
 rm -rf "${SUCCESS_DIR}"
 docker run \
@@ -60,6 +69,7 @@ docker run \
   -e "THIS_TFM=netcoreapp${DOTNET_VERSION}" \
   -e "CI_FOLDER=${CI_FOLDER}" \
   -e "GIT_COMMIT_HASH=${GIT_COMMIT_HASH}" \
+  "${ADDITIONAL_ENV[@]}" \
   "microsoft/dotnet:${DOTNET_VERSION}-sdk-alpine" \
   "${TEST_COMMAND[@]}"
   
