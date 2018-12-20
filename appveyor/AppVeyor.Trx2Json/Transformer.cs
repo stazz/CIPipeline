@@ -54,60 +54,88 @@ namespace AppVeyor.Trx2Json
             .Elements( XName.Get( "TestDefinitions", testNS ) )
             .SelectMany( testDef => testDef.Elements( XName.Get( "UnitTest", testNS ) ) )
             .SelectMany( testDef => testDef.Elements( XName.Get( "TestMethod", testNS ) ).Select( testMethod => (testDef, testMethod) ) )
-            .Select( tuple =>
+            .SelectMany( tuple =>
             {
                (var testDef, var testMethod) = tuple;
 
-               var testObject = new JObject(
-                  new JProperty( "testName", testMethod.Attribute( "className" ).Value + "." + testMethod.Attribute( "name" ).Value ),
-                  new JProperty( "testFramework", testFramework ),
-                  new JProperty( "fileName", Path.GetFileName( testMethod.Attribute( "codeBase" ).Value ) )
-                  );
-               if ( testDef.Element( XName.Get( "Execution", testNS ) ).Attribute( "id" ).Value is String executionID
-                  && unitTestResults.TryGetValue( executionID, out var result )
-                     )
-               {
-                  testObject.AddAttributeIfPresent(
-                     result,
-                     "outcome",
-                     null,
-                     outcome =>
-                     {
-                        if ( !Char.IsUpper( outcome[0] ) )
-                        {
-                           // Capitalize first letter
-                           var chars = outcome.ToCharArray();
-                           chars[0] = Char.ToUpper( chars[0] );
-                           outcome = new String( chars );
-                        }
-                        return outcome;
-                     } );
-                  testObject.AddAttributeIfPresent(
-                     result,
-                     "duration",
-                     "durationMilliseconds",
-                     duration => TimeSpan.Parse( duration ).TotalMilliseconds.ToString( "F0" )
-                     );
-
-                  var output = result.Element( XName.Get( "Output", testNS ) );
-                  if ( output != null )
-                  {
-                     testObject.AddTextFromChild( output, "StdOut", testNS, null );
-                     testObject.AddTextFromChild( output, "StdErr", testNS, null );
-                     var errorInfo = output.Element( XName.Get( "ErrorInfo", testNS ) );
-                     if ( errorInfo != null )
-                     {
-                        testObject.AddTextFromChild( errorInfo, "Message", testNS, "ErrorMessage" );
-                        testObject.AddTextFromChild( errorInfo, "StackTrace", testNS, "ErrorStackTrace" );
-                     }
-                  }
-               }
-
-               return testObject;
+               return testDef.Element( XName.Get( "Execution", testNS ) ).Attribute( "id" ).Value is String executionID
+                  && unitTestResults.TryGetValue( executionID, out var unitTestResult ) ?
+                  ExtractResultsUnitTestResult( testFramework, testNS, testDef, testMethod, unitTestResult, null ) :
+                  Enumerable.Empty<JObject>();
             } )
          );
       }
-   }
+
+     private static IEnumerable<JObject> ExtractResultsUnitTestResult(
+        String testFramework,
+        String testNS,
+        XElement testDef,
+        XElement testMethod,
+        XElement unitTestResult,
+        String currentPrefix
+     ) {
+        var inner = unitTestResult.Element( XName.Get( "InnerResults", testNS ) );
+        if ( String.IsNullOrEmpty( currentPrefix ) )
+        {
+           currentPrefix = testMethod.Attribute( "className" ).Value + ".";
+        }
+        return inner // If inner is not null, then this is typically DataDrivenTest, we should ignore this element and return inner ones instead
+           ?.Elements( XName.Get( "UnitTestResult", testNS ) )
+           .SelectMany( innerResult => ExtractResultsUnitTestResult( testFramework, testNS, testDef, testMethod, innerResult, currentPrefix ) )
+           ?? new JObject[] {} // If inner is null, return one object with required information
+              .Prepend( CreateAppVeyorObjectFromTestResult( testFramework, testNS, currentPrefix + unitTestResult.Attribute( "testName" ).Value, testMethod, unitTestResult ) );
+     }
+
+     private static JObject CreateAppVeyorObjectFromTestResult(
+        String testFramework,
+        String testNS,
+        String testName,
+        XElement testMethod,
+        XElement unitTestResult
+     ) {
+       var retVal = new JObject(
+          new JProperty( "testName", testName ),
+          new JProperty( "testFramework", testFramework ),
+          new JProperty( "fileName", Path.GetFileName( testMethod.Attribute( "codeBase" ).Value ) )
+          );
+       retVal.AddAttributeIfPresent(
+         unitTestResult,
+         "outcome",
+         null,
+         outcome =>
+         {
+            if ( !Char.IsUpper( outcome[0] ) )
+            {
+               // Capitalize first letter
+               var chars = outcome.ToCharArray();
+               chars[0] = Char.ToUpper( chars[0] );
+               outcome = new String( chars );
+            }
+            return outcome;
+         } );
+        retVal.AddAttributeIfPresent(
+           unitTestResult,
+           "duration",
+           "durationMilliseconds",
+           duration => TimeSpan.Parse( duration ).TotalMilliseconds.ToString( "F0" )
+           );
+
+        var output = unitTestResult.Element( XName.Get( "Output", testNS ) );
+        if ( output != null )
+        {
+           retVal.AddTextFromChild( output, "StdOut", testNS, null );
+           retVal.AddTextFromChild( output, "StdErr", testNS, null );
+           var errorInfo = output.Element( XName.Get( "ErrorInfo", testNS ) );
+           if ( errorInfo != null )
+           {
+              retVal.AddTextFromChild( errorInfo, "Message", testNS, "ErrorMessage" );
+              retVal.AddTextFromChild( errorInfo, "StackTrace", testNS, "ErrorStackTrace" );
+           }
+        }
+
+        return retVal;
+     }
+  }
 }
 
 public static class E_Trx2Json
