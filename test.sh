@@ -56,6 +56,11 @@ if [[ "${ADDITIONAL_ENVIRONMENT_VARS}" ]]; then
   done
 fi
 
+if [[ "${TEST_BEFORE_DOCKER_SCRIPT}" ]]; then
+  BEFORE_AFTER_SCRIPT_DIR="$(mktemp -d -p "${BASE_ROOT}")"
+  "${GIT_ROOT}/${TEST_BEFORE_DOCKER_SCRIPT}" "${BEFORE_AFTER_SCRIPT_DIR}"
+fi
+
 # Run tests code within docker
 rm -rf "${SUCCESS_DIR}"
 docker run \
@@ -70,8 +75,17 @@ docker run \
   -e "CI_FOLDER=${CI_FOLDER}" \
   -e "GIT_COMMIT_HASH=${GIT_COMMIT_HASH}" \
   "${ADDITIONAL_ENV[@]}" \
+  --network cbam_test_nw \
   "microsoft/dotnet:${DOTNET_VERSION}-sdk-alpine" \
   "${TEST_COMMAND[@]}"
+
+if [[ "${TEST_AFTER_DOCKER_SCRIPT}" ]]; then
+  if [[ -z "${BEFORE_AFTER_SCRIPT_DIR}" ]]; then
+    BEFORE_AFTER_SCRIPT_DIR="$(mktemp -d -p "${BASE_ROOT}")"
+  fi
+
+  "${GIT_ROOT}/${TEST_AFTER_DOCKER_SCRIPT}" "${BEFORE_AFTER_SCRIPT_DIR}"
+fi
   
 # Run custom script if it is given
 if [[ "$1" ]]; then
