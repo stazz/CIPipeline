@@ -63,6 +63,7 @@ namespace AppVeyor.Trx2Json
                   ExtractResultsUnitTestResult( testFramework, testNS, testDef, testMethod, unitTestResult, null ) :
                   Enumerable.Empty<JObject>();
             } )
+            .OrderBy( jObj => jObj["testName"].Value<String>() )
          );
       }
 
