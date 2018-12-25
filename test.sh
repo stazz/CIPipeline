@@ -56,6 +56,8 @@ if [[ "${ADDITIONAL_ENVIRONMENT_VARS}" ]]; then
   done
 fi
 
+ADDITIONAL_DOCKER_ARGS=(${TEST_ADDITIONAL_DOCKER_ARGS})
+
 if [[ "${TEST_BEFORE_DOCKER_SCRIPT}" ]]; then
   BEFORE_AFTER_SCRIPT_DIR="$(mktemp -d -p "${BASE_ROOT}")"
   "${GIT_ROOT}/${TEST_BEFORE_DOCKER_SCRIPT}" "${BEFORE_AFTER_SCRIPT_DIR}"
@@ -75,7 +77,7 @@ docker run \
   -e "CI_FOLDER=${CI_FOLDER}" \
   -e "GIT_COMMIT_HASH=${GIT_COMMIT_HASH}" \
   "${ADDITIONAL_ENV[@]}" \
-  --network cbam_test_nw \
+  "${ADDITIONAL_DOCKER_ARGS[@]}" \
   "microsoft/dotnet:${DOTNET_VERSION}-sdk-alpine" \
   "${TEST_COMMAND[@]}"
 
