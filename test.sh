@@ -63,6 +63,8 @@ if [[ "${TEST_BEFORE_DOCKER_SCRIPT}" ]]; then
   "${GIT_ROOT}/${TEST_BEFORE_DOCKER_SCRIPT}" "${BEFORE_AFTER_SCRIPT_DIR}"
 fi
 
+GIT_COMMIT_HASH=$(git -C "${GIT_ROOT}" show-ref --hash HEAD)
+
 # Run tests code within docker
 rm -rf "${SUCCESS_DIR}"
 docker run \
