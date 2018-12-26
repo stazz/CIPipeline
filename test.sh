@@ -181,7 +181,7 @@ if [[ -f "${CS_OUTPUT}/TestCoverage/coverage.opencover.xml" ]]; then
   # Turn off var expansion when dealing with secure variable
   set -v
   set +x
-  "${CODECOV_UPLOADER}" -f "${CS_OUTPUT}/TestCoverage/coverage.opencover.xml" -t "${CODECOV_TOKEN}"
+  "${CODECOV_UPLOADER}" -f "${CS_OUTPUT}/TestCoverage/coverage.opencover.xml" -t "${CODECOV_TOKEN}" -Z
   #  -n "commit-${GIT_COMMIT_HASH}"
   set +v
   set -x
