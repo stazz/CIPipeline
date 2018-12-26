@@ -178,6 +178,11 @@ if [[ -f "${CS_OUTPUT}/TestCoverage/coverage.opencover.xml" ]]; then
   sudo chmod o+rwX /repo-dir/
   sudo chmod o+rwX /repo-dir/contents/
   ln -sf "${GIT_ROOT}/" /repo-dir/contents/
-  "${CODECOV_UPLOADER}" -f "${CS_OUTPUT}/TestCoverage/coverage.opencover.xml"
+  # Turn off var expansion when dealing with secure variable
+  set -v
+  set +x
+  "${CODECOV_UPLOADER}" -f "${CS_OUTPUT}/TestCoverage/coverage.opencover.xml" -t "${CODECOV_TOKEN}"
   #  -n "commit-${GIT_COMMIT_HASH}"
+  set +v
+  set -x
 fi

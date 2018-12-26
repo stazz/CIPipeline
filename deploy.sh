@@ -37,6 +37,9 @@ if [[ "${GIT_COMMIT_HASH}" == "${COMMIT_HASH_IN_MASTER}" ]]; then
     for CURRENT_TAG in "${CURRENT_TAGS[@]}"; do
       # This will return non-zero, failing whole script, if file does not exist
       cp "${CS_OUTPUT}/Release/bin/${CURRENT_TAG}.nupkg" "${PUSH_DIR}/"
+      if [[ -f "${CS_OUTPUT}/Release/bin/${CURRENT_TAG}.snupkg" ]]; then
+        cp "${CS_OUTPUT}/Release/bin/${CURRENT_TAG}.snupkg" "${PUSH_DIR}/"
+      fi
     done
 
     ADDITIONAL_DOCKER_ARGS=()

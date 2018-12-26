@@ -83,6 +83,6 @@ fi
 
 # Run custom script if it is given
 if [[ "$1" ]]; then
-  readarray -t PACKAGE_FILES < <(find "${CS_OUTPUT}/Release/bin" -mindepth 1 -maxdepth 1 -type f -name *.nupkg)
+  readarray -t PACKAGE_FILES < <(find "${CS_OUTPUT}/Release/bin" -mindepth 1 -maxdepth 1 -type f -name *.*nupkg)
   "$1" "${PACKAGE_FILES[@]}"
 fi
