@@ -19,7 +19,13 @@ fi
 # Using dotnet build /t:Pack will cause re-build even with /p:GeneratePackageOnBuild=false /p:NoBuild=true flags, so just use dotnet pack instead
 GIT_COMMIT_HASH=$(git -C "${GIT_ROOT}" show-ref --hash HEAD)
 SUCCESS_DIR="${BASE_ROOT}/package-success"
-PACKAGE_COMMAND=(find /repo-dir/contents/Source/Code -mindepth 2 -maxdepth 2 -type f -name *.csproj -exec sh -c "dotnet pack -nologo -c Release --no-build /p:IsCIBuild=true /p:CIPackageVersionSuffix=${GIT_COMMIT_HASH} {}"' && touch "/success/$(basename {} .csproj)"' \;)
+if [[ "${DEPLOY_NUGET_NO_SYMBOLS}" ]]; then
+  PACKAGE_COMMAND=()
+else
+  PACKAGE_COMMAND=('--include-symbols' '/p:SymbolPackageFormat=snupkg')
+fi
+
+PACKAGE_COMMAND=(find /repo-dir/contents/Source/Code -mindepth 2 -maxdepth 2 -type f -name *.csproj -exec sh -c "dotnet pack -nologo -c Release --no-build /p:IsCIBuild=true /p:CIPackageVersionSuffix=${GIT_COMMIT_HASH} `echo ${PACKAGE_COMMAND[@]}` {}"' && touch "/success/$(basename {} .csproj)"' \;)
 
 
 if [[ "${PACKAGE_SCRIPT_WITHIN_CONTAINER}" ]]; then
