@@ -5,6 +5,8 @@ services:
 cache:
   - 'nuget-package-dir'
   - 'docker-images'
+  - 'dotnet-tools'
+  - 'coverage-tools'
 
 # Uncomment if you build against net40
 #  - 'v4-ref-assemblies'
