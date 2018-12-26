@@ -11,8 +11,10 @@ if [[ -f "${DOCKER_IMAGE_FILE}" ]]; then
   # Load image
   docker image load -i "${DOCKER_IMAGE_FILE}"
 
-  # Get image ID
+  # Get image ID (when changing image, we will get an error that no such image is available, ignore that)
+  set +e
   DOCKER_IMAGE_ID="$(docker image inspect -f '{{ .Id }}' "${DOCKER_IMAGE_NAME}")"
+  set -e
   
   # Pull image
   docker pull "${DOCKER_IMAGE_NAME}"
