@@ -29,7 +29,7 @@ fi
 SUCCESS_DIR="${BASE_ROOT}/test-success"
 TEST_COMMAND=(find /repo-dir/contents/Source/Tests -mindepth 2 -maxdepth 2 -type f -name *.csproj)
 if [[ "${NO_TEST_COVERAGE}" ]]; then
-  TEST_COMMAND+=(-exec sh -c 'dotnet test -nologo -c Release --no-build --logger trx\;LogFileName=/repo-dir/BuildTarget/TestResults/$(basename {} .csproj).trx /p:IsCIBuild=true {} && touch "/success/$(basename {} .csproj)"' \;)
+  TEST_COMMAND+=(-exec sh -c 'dotnet test -nologo -c Release --no-build --logger trx\;LogFileName=/repo-dir/BuildTarget/TestResults/$(basename {} .csproj).trx /p:IsCIBuild=true "{}" && touch "/success/$(basename {} .csproj)"' \;)
 else
   # First install the coverlet .NET Core tool
   if [[ ! -f "${BASE_ROOT}/dotnet-tools/coverlet" ]]; then
@@ -42,29 +42,7 @@ else
       coverlet.console
   fi
 
-  # Because of how coverlet works, we must actually build command manually
-  TEST_COMMAND[1]="${GIT_ROOT}/Source/Tests"
-  readarray -t TEST_PROJECTS < <("${TEST_COMMAND[@]}")
-  TEST_COMMAND=()
-  COVERLET="/dotnet-tools/coverlet"
-  for TEST_IDX in "${!TEST_PROJECTS[@]}"; do
-    TEST_PROJECT_NAME="$(basename ${TEST_PROJECTS[$TEST_IDX]} .csproj)"
-    TEST_COMMAND+=("${COVERLET}" "/repo-dir/BuildTarget/Release/bin/${TEST_PROJECT_NAME}/netcoreapp${DOTNET_VERSION}/${TEST_PROJECT_NAME}.dll" --target dotnet --targetargs "'test -c Release --no-build --logger trx;LogFileName=/repo-dir/BuildTarget/TestResults/${TEST_PROJECT_NAME}.trx /repo-dir/contents/Source/Tests/${TEST_PROJECT_NAME}/${TEST_PROJECT_NAME}.csproj'")
-    if [[ "${TEST_IDX}" -gt 0 ]]; then
-      # Merge with previous codecoverage results
-      TEST_COMMAND+=('--merge-with' "/repo-dir/BuildTarget/TestCoverage/$(basename ${TEST_PROJECTS[${TEST_IDX}-1]} .csproj).coverage.json")
-    fi
-    if [[ $(("${TEST_IDX}"+1)) -eq "${#TEST_PROJECTS[@]}" ]]; then
-      # Last element -> format is opencover, output file path always same
-      TEST_COMMAND+=('--format' 'opencover' '--output' "/repo-dir/BuildTarget/TestCoverage/coverage.opencover.xml")
-    else
-      # More to come -> format is json, output file depends on project name
-      TEST_COMMAND+=('--format' 'json' '--output' "/repo-dir/BuildTarget/TestCoverage/${TEST_PROJECT_NAME}.coverage.json")
-    fi
-    TEST_COMMAND+=('&&' 'touch' "/success/${TEST_PROJECT_NAME}" ';')
-  done
-  TEST_COMMAND+=('exit' '0' ';')
-  TEST_COMMAND=('sh' '-c' "`echo "${TEST_COMMAND[@]}"`")
+  TEST_COMMAND+=(-exec sh -c '/dotnet-tools/coverlet "/repo-dir/BuildTarget/Release/bin/$(basename {} .csproj)/netcoreapp'"${DOTNET_VERSION}"'/$(basename {} .csproj).dll" --target dotnet --targetargs "test -c Release --no-build --logger trx;LogFileName=/repo-dir/BuildTarget/TestResults/$(basename {} .csproj).trx /p:IsCIBuild=true {}" --format opencover --output "/repo-dir/BuildTarget/TestCoverage/$(basename {} .csproj).xml" && touch "/success/$(basename {} .csproj)"' \;)
 fi
 
 if [[ "${TEST_SCRIPT_WITHIN_CONTAINER}" ]]; then
@@ -161,7 +139,7 @@ for TEST_RESULT in "${TEST_RESULTS[@]}"; do
 done
 
 # Upload coverage report if all tests are successful and if the report exists
-if [[ -f "${CS_OUTPUT}/TestCoverage/coverage.opencover.xml" ]]; then
+if [[ "$(ls -A ${CS_OUTPUT}/TestCoverage)" ]]; then
   # Download the uploader first if it isn't already
   CODECOV_UPLOADER="${BASE_ROOT}/coverage-tools/codecov-upload.sh"
   if [[ ! -f "${CODECOV_UPLOADER}" ]]; then
@@ -179,9 +157,10 @@ if [[ -f "${CS_OUTPUT}/TestCoverage/coverage.opencover.xml" ]]; then
   sudo chmod o+rwX /repo-dir/contents/
   ln -sf "${GIT_ROOT}/" /repo-dir/contents/
   # Turn off var expansion when dealing with secure variable
-  set -v
   set +x
-  "${CODECOV_UPLOADER}" -f "${CS_OUTPUT}/TestCoverage/coverage.opencover.xml" -t "${CODECOV_TOKEN}" -Z
+  set -v
+  CODECOV_COMMAND=("${CODECOV_UPLOADER}" -f '{}' -t "${CODECOV_TOKEN}" -Z -c -F '$(basename {} .xml)')
+  find "${CS_OUTPUT}/TestCoverage/" -mindepth 1 -maxdepth 1 -type f -exec sh -c "`echo ${CODECOV_COMMAND[@]}`" \;
   #  -n "commit-${GIT_COMMIT_HASH}"
   set +v
   set -x
