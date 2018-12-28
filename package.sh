@@ -35,10 +35,11 @@ fi
 
 ADDITIONAL_VOLUMES=()
 if [[ "${ADDITIONAL_VOLUME_DIRECTORIES}" ]]; then
-  IFS=', ' read -r -a volume_dir_array <<< "${ADDITIONAL_VOLUME_DIRECTORIES}"
-  for volume_dir in "${volume_dir_array[@]}"
+  # Crucial to leave unquoted in order to make it work
+  VOLUME_DIR_ARRAY=(${ADDITIONAL_VOLUME_DIRECTORIES})
+  for VOLUME_DIR in "${VOLUME_DIR_ARRAY[@]}"
   do
-    ADDITIONAL_VOLUMES+=('-v' "${BASE_ROOT}/${volume_dir}:/repo-dir/${volume_dir}/:ro")
+    ADDITIONAL_VOLUMES+=('-v' "${BASE_ROOT}/${VOLUME_DIR}:/repo-dir/${VOLUME_DIR}/:ro")
   done
 fi
 
