@@ -159,7 +159,7 @@ if [[ "$(ls -A ${CS_OUTPUT}/TestCoverage)" ]]; then
   # Turn off var expansion when dealing with secure variable
   set +x
   set -v
-  CODECOV_COMMAND=("${CODECOV_UPLOADER}" -f '{}' -t "${CODECOV_TOKEN}" -Z -c -F '$(basename {} .xml)')
+  CODECOV_COMMAND=("${CODECOV_UPLOADER}" -f '{}' -t "${CODECOV_TOKEN}" -Z -F '$(basename {} .xml)')
   find "${CS_OUTPUT}/TestCoverage/" -mindepth 1 -maxdepth 1 -type f -exec sh -c "`echo ${CODECOV_COMMAND[@]}`" \;
   #  -n "commit-${GIT_COMMIT_HASH}"
   set +v
