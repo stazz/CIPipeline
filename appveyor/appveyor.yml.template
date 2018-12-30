@@ -6,7 +6,9 @@ cache:
   - 'nuget-package-dir'
   - 'docker-images'
   - 'dotnet-tools'
-  - 'coverage-tools'
+skip_commits:
+  files:
+    - '**/*.md'
 
 # Uncomment if you build against net40
 #  - 'v4-ref-assemblies'
@@ -37,6 +39,12 @@ environment:
 # For when need to sign with secret sign key:
 #  ASSEMBLY_SIGN_KEY:
 #    secure: appveyor-encoded-value
+
+# For code coverage report uploading
+#  CODECOV_SSH_KEY:
+#    secure: appveyor-encoded-value
+#  CODECOV_PAGES_USER_EMAIL:
+#    secure: appveyor-encoded-value
   
 init:
   - sh: git config --global core.autocrlf false
@@ -63,8 +71,7 @@ build_script:
   - sh: 'sudo chown -R `id -u` "${APPVEYOR_BUILD_FOLDER}/${RELATIVE_NUGET_PACKAGE_DIR}"'
 
 test_script:
-  # Fix auto-detection of AppVeyor: in Ubuntu image, these properties are all-lowercase, but the codecov script checks for first letter uppercase.
-  - sh: 'CI=True APPVEYOR=True "${APPVEYOR_BUILD_FOLDER}/git/${CI_FOLDER}/test.sh" "${APPVEYOR_BUILD_FOLDER}/git/${CI_FOLDER}/appveyor/add_tests.sh"'
+  - sh: '"${APPVEYOR_BUILD_FOLDER}/git/${CI_FOLDER}/test.sh" "${APPVEYOR_BUILD_FOLDER}/git/${CI_FOLDER}/appveyor/add_tests.sh"'
   - sh: 'sudo chown -R `id -u` "${APPVEYOR_BUILD_FOLDER}/${RELATIVE_CS_OUTPUT}"'
   - sh: 'sudo chown -R `id -u` "${APPVEYOR_BUILD_FOLDER}/${RELATIVE_NUGET_PACKAGE_DIR}"'
 
