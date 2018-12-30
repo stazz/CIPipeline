@@ -139,29 +139,106 @@ for TEST_RESULT in "${TEST_RESULTS[@]}"; do
 done
 
 # Upload coverage report if all tests are successful and if the report exists
-if [[ "$(ls -A ${CS_OUTPUT}/TestCoverage)" ]]; then
-  # Download the uploader first if it isn't already
-  CODECOV_UPLOADER="${BASE_ROOT}/coverage-tools/codecov-upload.sh"
-  if [[ ! -f "${CODECOV_UPLOADER}" ]]; then
-    mkdir -p "$(dirname "${CODECOV_UPLOADER}")"
-    # Download the uploader first
-    curl -o "${CODECOV_UPLOADER}" 'https://codecov.io/bash'
+CODECOV_REPORT_DIR="${CS_OUTPUT}/TestCoverage"
+if [[ "$(ls -A ${CODECOV_REPORT_DIR})" ]]; then
+  # Find out user name and repo name
+  if [[ -z "${CODECOV_PAGES_REPO_NAME}" ]]; then
+    CODECOV_PAGES_REPO_NAME='ci-codecov-pages.git'
   fi
-  chmod +x "${CODECOV_UPLOADER}"
+  if [[ -z "${CODECOV_PAGES_USER_NAME}" ]]; then
+    CODECOV_PAGES_USER_NAME="$(git -C "${GIT_ROOT}" config --get remote.origin.url | awk -F : '{printf $2}' | awk -F / '{printf $1}')"
+  fi
+  if [[ -z "${CODECOV_PAGES_HOST_NAME}" ]]; then
+    CODECOV_PAGES_HOST_NAME="$(git -C "${GIT_ROOT}" config --get remote.origin.url | awk -F : '{printf $1}')"
+  fi
+  if [[ -z "${CODECOV_PAGES_THIS_PROJECT_NAME}" ]]; then
+    CODECOV_PAGES_THIS_PROJECT_NAME="$(git -C "${GIT_ROOT}" config --local --get remote.origin.url | awk -F : '{printf $2}' | awk -F / '{printf $2}' | awk -F .git '{printf $1}')"
+  fi
 
-  # The coverage file will contain file paths, which resolve within the container, but not outside of it
-  # We can either upload from within another container (which can't be alpine-based, since it is bash script instead of sh script)
-  # Or we can just make symlink
-  sudo mkdir -p /repo-dir/contents/
-  sudo chmod o+rwX /repo-dir/
-  sudo chmod o+rwX /repo-dir/contents/
-  ln -sf "${GIT_ROOT}/" /repo-dir/contents/
+  # Generate the private key file
+  CODECOV_PAGES_SSH_KEY_FILE="$(mktemp -p "${BASE_ROOT}")"
+  chmod u=rw,g=,o= "${CODECOV_PAGES_SSH_KEY_FILE}"
   # Turn off var expansion when dealing with secure variable
   set +x
   set -v
-  CODECOV_COMMAND=("${CODECOV_UPLOADER}" -f '{}' -t "${CODECOV_TOKEN}" -Z -F '$(echo $(basename {} .xml) | tr [:upper:] [:lower:] | tr . _ )')
-  find "${CS_OUTPUT}/TestCoverage/" -mindepth 1 -maxdepth 1 -type f -exec sh -c "`echo ${CODECOV_COMMAND[@]}`" \;
-  #  -n "commit-${GIT_COMMIT_HASH}"
+  echo '-----BEGIN OPENSSH PRIVATE KEY-----' > "${CODECOV_PAGES_SSH_KEY_FILE}"
+  echo "${CODECOV_SSH_KEY}" | tr ' ' '\n' >> "${CODECOV_PAGES_SSH_KEY_FILE}"
+  echo '-----END OPENSSH PRIVATE KEY-----' >> "${CODECOV_PAGES_SSH_KEY_FILE}"
+  # We're done with dealing with secure variable
   set +v
   set -x
+
+  # Pull from the repo
+  CODECOV_PAGES_REPO_DIR="${BASE_ROOT}/codecov_pages_repo"
+  CODECOV_PAGES_GIT_SSH_COMMAND="ssh -i ${CODECOV_PAGES_SSH_KEY_FILE} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+  GIT_SSH_COMMAND="${CODECOV_PAGES_GIT_SSH_COMMAND}" git clone --depth=1 "${CODECOV_PAGES_HOST_NAME}:${CODECOV_PAGES_USER_NAME}/${CODECOV_PAGES_REPO_NAME}" "${CODECOV_PAGES_REPO_DIR}"
+
+  # Download and install report generator, if needed
+  if [[ ! -f "${BASE_ROOT}/dotnet-tools/reportgenerator" ]]; then
+    docker run --rm \
+      -v "${BASE_ROOT}/dotnet-tools/:/dotnet-tools/:rw" \
+      "microsoft/dotnet:${DOTNET_VERSION}-sdk-alpine" \
+      dotnet tool install \
+      --tool-path /dotnet-tools/ \
+      --version 4.0.4 \
+      dotnet-reportgenerator-globaltool
+  fi
+  
+  # Create HTML report from all the test projects
+  docker run --rm \
+    -v "${GIT_ROOT}/:/repo-dir/contents/:ro" \
+    -v "${BASE_ROOT}/dotnet-tools/:/dotnet-tools/:ro" \
+    -v "${CODECOV_REPORT_DIR}/:/input/:ro" \
+    -v "${CODECOV_PAGES_REPO_DIR}/docs/${CODECOV_PAGES_THIS_PROJECT_NAME}/:/output/:rw" \
+    -v "${CODECOV_PAGES_REPO_DIR}/history/${CODECOV_PAGES_THIS_PROJECT_NAME}/:/history/:rw" \
+    "microsoft/dotnet:${DOTNET_VERSION}-sdk-alpine" \
+    '/dotnet-tools/reportgenerator' \
+    '-reports:/input/*.xml' \
+    '-targetdir:/output' \
+    '-reporttypes:html' \
+    '-historydir:/history'
+  
+  # Create Badges from all the test projects
+  # We will get "Error during rendering summary report (Report type: 'Badges'): Arial could not be found" but that's related only to .png file generation
+  # Since we will be using only .svg anyway, all should be fine.
+  docker run --rm \
+    -v "${GIT_ROOT}/:/repo-dir/contents/:ro" \
+    -v "${BASE_ROOT}/dotnet-tools/:/dotnet-tools/:ro" \
+    -v "${CODECOV_REPORT_DIR}/:/input/:ro" \
+    -v "${CODECOV_PAGES_REPO_DIR}/badges/${CODECOV_PAGES_THIS_PROJECT_NAME}/total/:/output/:rw" \
+    "microsoft/dotnet:${DOTNET_VERSION}-sdk-alpine" \
+    '/dotnet-tools/reportgenerator' \
+    '-reports:/input/*.xml' \
+    '-targetdir:/output/' \
+    '-reporttypes:badges'
+
+  # Create badge for each test project
+  docker run --rm \
+    -v "${GIT_ROOT}/:/repo-dir/contents/:ro" \
+    -v "${BASE_ROOT}/dotnet-tools/:/dotnet-tools/:ro" \
+    -v "${CODECOV_REPORT_DIR}/:/input/:ro" \
+    -v "${CODECOV_PAGES_REPO_DIR}/badges/${CODECOV_PAGES_THIS_PROJECT_NAME}/:/output/:rw" \
+    "microsoft/dotnet:${DOTNET_VERSION}-sdk-alpine" \
+    find \
+    /input \
+    -mindepth 1 \
+    -maxdepth 1 \
+    -type f \
+    -name '*.xml' \
+    -exec \
+    sh -c \
+    '/dotnet-tools/reportgenerator -reports:{} -targetdir:/output/project_$(basename {} .xml) -reporttypes:badges' \
+    \;
+
+  # Add changes and push the repository (don't show email)
+  set +x
+  set -v
+  git -C "${CODECOV_PAGES_REPO_DIR}" config --local user.email "${CODECOV_PAGES_USER_EMAIL}"
+  set -x
+  set +v
+
+  git -C "${CODECOV_PAGES_REPO_DIR}" config --local user.name codecoverage-ci-bot
+  git -C "${CODECOV_PAGES_REPO_DIR}" add "docs/${CODECOV_PAGES_THIS_PROJECT_NAME}" "history/${CODECOV_PAGES_THIS_PROJECT_NAME}" "badges/${CODECOV_PAGES_THIS_PROJECT_NAME}"
+  git -C "${CODECOV_PAGES_REPO_DIR}" commit -m "Project ${CODECOV_PAGES_THIS_PROJECT_NAME}, commit ${GIT_COMMIT_HASH}."
+  GIT_SSH_COMMAND="${CODECOV_PAGES_GIT_SSH_COMMAND}" git -C "${CODECOV_PAGES_REPO_DIR}" push
 fi
