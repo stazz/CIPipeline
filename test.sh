@@ -186,7 +186,19 @@ if [[ "$(ls -A ${CODECOV_REPORT_DIR})" ]]; then
   # Pull from the repo
   CODECOV_PAGES_REPO_DIR="${BASE_ROOT}/codecov_pages_repo"
   CODECOV_PAGES_GIT_SSH_COMMAND="ssh -i ${CODECOV_PAGES_SSH_KEY_FILE} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-  GIT_SSH_COMMAND="${CODECOV_PAGES_GIT_SSH_COMMAND}" git clone --depth=1 "${CODECOV_PAGES_HOST_NAME}:${CODECOV_PAGES_USER_NAME}/${CODECOV_PAGES_REPO_NAME}" "${CODECOV_PAGES_REPO_DIR}"
+  mkdir "${CODECOV_PAGES_REPO_DIR}"
+  git -C "${CODECOV_PAGES_REPO_DIR}" init
+  git -C "${CODECOV_PAGES_REPO_DIR}" remote add origin "${CODECOV_PAGES_HOST_NAME}:${CODECOV_PAGES_USER_NAME}/${CODECOV_PAGES_REPO_NAME}"
+  git -C "${CODECOV_PAGES_REPO_DIR}" config --local core.sparsecheckout true
+  echo "docs/${CODECOV_PAGES_THIS_PROJECT_NAME}" > "${CODECOV_PAGES_REPO_DIR}/.git/info/sparse-checkout"
+  echo "history/${CODECOV_PAGES_THIS_PROJECT_NAME}" >> "${CODECOV_PAGES_REPO_DIR}/.git/info/sparse-checkout"
+  echo "badges/${CODECOV_PAGES_THIS_PROJECT_NAME}" >> "${CODECOV_PAGES_REPO_DIR}/.git/info/sparse-checkout"
+  GIT_SSH_COMMAND="${CODECOV_PAGES_GIT_SSH_COMMAND}" git -C "${CODECOV_PAGES_REPO_DIR}" pull --depth 1 origin master
+  # GIT_SSH_COMMAND="${CODECOV_PAGES_GIT_SSH_COMMAND}" git clone --depth=1 --no-checkout "--filter=sparse:path=docs/${CODECOV_PAGES_THIS_PROJECT_NAME}:history/${CODECOV_PAGES_THIS_PROJECT_NAME}:badges/${CODECOV_PAGES_THIS_PROJECT_NAME}" "${CODECOV_PAGES_HOST_NAME}:${CODECOV_PAGES_USER_NAME}/${CODECOV_PAGES_REPO_NAME}" "${CODECOV_PAGES_REPO_DIR}"
+  git -C "${CODECOV_PAGES_REPO_DIR}" checkout master -- "docs/${CODECOV_PAGES_THIS_PROJECT_NAME}" "history/${CODECOV_PAGES_THIS_PROJECT_NAME}" "badges/${CODECOV_PAGES_THIS_PROJECT_NAME}"
+  # After partial checkout, unstage what git thinks are deletions
+  #git -C "${CODECOV_PAGES_REPO_DIR}" ls-tree --name-only -z HEAD docs/ badges/ history/ | xargs --null git -C "${CODECOV_PAGES_REPO_DIR}" reset --
+
 
   # Download and install report generator, if needed
   if [[ ! -f "${BASE_ROOT}/dotnet-tools/reportgenerator" ]]; then
@@ -211,7 +223,10 @@ if [[ "$(ls -A ${CODECOV_REPORT_DIR})" ]]; then
     '-reports:/input/*.xml' \
     '-targetdir:/output' \
     '-reporttypes:html' \
-    '-historydir:/history'
+    '-historydir:/history' \
+    "-tag:${GIT_COMMIT_HASH}"
+  # The HTML report will always have same title, so modify it to better describe what is the report about. The ReportGenerator does not currently provide ability to customize title of the resulting page, so let's just do it by ourselves.
+  sed -i "s#<title>Summary - Coverage Report</title>#<title>Coverage Report for ${CODECOV_PAGES_THIS_PROJECT_NAME}</title>#" "${CODECOV_PAGES_REPO_DIR}/docs/${CODECOV_PAGES_THIS_PROJECT_NAME}/index.htm"
   
   # Create Badges from all the test projects
   # We will get "Error during rendering summary report (Report type: 'Badges'): Arial could not be found" but that's related only to .png file generation
@@ -256,4 +271,5 @@ if [[ "$(ls -A ${CODECOV_REPORT_DIR})" ]]; then
   git -C "${CODECOV_PAGES_REPO_DIR}" add "docs/${CODECOV_PAGES_THIS_PROJECT_NAME}" "history/${CODECOV_PAGES_THIS_PROJECT_NAME}" "badges/${CODECOV_PAGES_THIS_PROJECT_NAME}"
   git -C "${CODECOV_PAGES_REPO_DIR}" commit -m "Project ${CODECOV_PAGES_THIS_PROJECT_NAME}, commit ${GIT_COMMIT_HASH}."
   GIT_SSH_COMMAND="${CODECOV_PAGES_GIT_SSH_COMMAND}" git -C "${CODECOV_PAGES_REPO_DIR}" push
+  rm "${CODECOV_PAGES_SSH_KEY_FILE}"
 fi
