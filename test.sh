@@ -145,14 +145,29 @@ if [[ "$(ls -A ${CODECOV_REPORT_DIR})" ]]; then
   if [[ -z "${CODECOV_PAGES_REPO_NAME}" ]]; then
     CODECOV_PAGES_REPO_NAME='ci-codecov-pages.git'
   fi
-  if [[ -z "${CODECOV_PAGES_USER_NAME}" ]]; then
-    CODECOV_PAGES_USER_NAME="$(git -C "${GIT_ROOT}" config --get remote.origin.url | awk -F : '{printf $2}' | awk -F / '{printf $1}')"
-  fi
-  if [[ -z "${CODECOV_PAGES_HOST_NAME}" ]]; then
-    CODECOV_PAGES_HOST_NAME="$(git -C "${GIT_ROOT}" config --get remote.origin.url | awk -F : '{printf $1}')"
-  fi
-  if [[ -z "${CODECOV_PAGES_THIS_PROJECT_NAME}" ]]; then
-    CODECOV_PAGES_THIS_PROJECT_NAME="$(git -C "${GIT_ROOT}" config --local --get remote.origin.url | awk -F : '{printf $2}' | awk -F / '{printf $2}' | awk -F .git '{printf $1}')"
+  GIT_FULL_REMOTE_URL="$(git -C "${GIT_ROOT}" config --local --get remote.origin.url)"
+  if [[ -z "${GIT_FULL_REMOTE_URL##*https://*}" ]]; then
+    # https is used to clone code repository
+    if [[ -z "${CODECOV_PAGES_USER_NAME}" ]]; then
+      CODECOV_PAGES_USER_NAME="$(echo "${GIT_FULL_REMOTE_URL}" | awk -F https:// '{printf $2}' | awk -F / '{printf $2}')"
+    fi
+    if [[ -z "${CODECOV_PAGES_HOST_NAME}" ]]; then
+      CODECOV_PAGES_HOST_NAME="$(echo "${GIT_FULL_REMOTE_URL}" | awk -F https:// '{printf $2}' | awk -F / '{printf "git@"$1}')"
+    fi
+    if [[ -z "${CODECOV_PAGES_THIS_PROJECT_NAME}" ]]; then
+      CODECOV_PAGES_THIS_PROJECT_NAME="$(echo "${GIT_FULL_REMOTE_URL}" | awk -F https:// '{printf $2}' | awk -F / '{printf $3}' | awk -F .git '{printf $1}')"
+    fi
+  else
+    # ssh is used to clone code repository
+    if [[ -z "${CODECOV_PAGES_USER_NAME}" ]]; then
+      CODECOV_PAGES_USER_NAME="$(echo "${GIT_FULL_REMOTE_URL}" | awk -F : '{printf $2}' | awk -F / '{printf $1}')"
+    fi
+    if [[ -z "${CODECOV_PAGES_HOST_NAME}" ]]; then
+      CODECOV_PAGES_HOST_NAME="$(echo "${GIT_FULL_REMOTE_URL}" | awk -F : '{printf $1}')"
+    fi
+    if [[ -z "${CODECOV_PAGES_THIS_PROJECT_NAME}" ]]; then
+      CODECOV_PAGES_THIS_PROJECT_NAME="$(echo "${GIT_FULL_REMOTE_URL}" | awk -F : '{printf $2}' | awk -F / '{printf $2}' | awk -F .git '{printf $1}')"
+    fi
   fi
 
   # Generate the private key file
