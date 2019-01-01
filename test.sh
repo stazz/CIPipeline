@@ -228,6 +228,7 @@ if [[ "$(ls -A ${CODECOV_REPORT_DIR})" ]]; then
     '-historydir:/history' \
     "-tag:${GIT_COMMIT_HASH}"
   # The HTML report will always have same title, so modify it to better describe what is the report about. The ReportGenerator does not currently provide ability to customize title of the resulting page, so let's just do it by ourselves.
+  sudo chown -R "$(id -u)" "${CODECOV_PAGES_REPO_DIR}/docs/${CODECOV_PAGES_THIS_PROJECT_NAME}"
   sed -i "s#<title>Summary - Coverage Report</title>#<title>Coverage Report for ${CODECOV_PAGES_THIS_PROJECT_NAME}</title>#" "${CODECOV_PAGES_REPO_DIR}/docs/${CODECOV_PAGES_THIS_PROJECT_NAME}/index.htm"
   
   # Create Badges from all the test projects
