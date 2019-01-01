@@ -141,6 +141,18 @@ done
 # Upload coverage report if all tests are successful and if the report exists
 CODECOV_REPORT_DIR="${CS_OUTPUT}/TestCoverage"
 if [[ "$(ls -A ${CODECOV_REPORT_DIR})" ]]; then
+
+  # Download and install report generator, if needed
+  if [[ ! -f "${BASE_ROOT}/dotnet-tools/reportgenerator" ]]; then
+    docker run --rm \
+      -v "${BASE_ROOT}/dotnet-tools/:/dotnet-tools/:rw" \
+      "microsoft/dotnet:${DOTNET_VERSION}-sdk-alpine" \
+      dotnet tool install \
+      --tool-path /dotnet-tools/ \
+      --version 4.0.4 \
+      dotnet-reportgenerator-globaltool
+  fi
+  
   # Find out user name and repo name
   if [[ -z "${CODECOV_PAGES_REPO_NAME}" ]]; then
     CODECOV_PAGES_REPO_NAME='ci-codecov-pages.git'
@@ -198,19 +210,9 @@ if [[ "$(ls -A ${CODECOV_REPORT_DIR})" ]]; then
   git -C "${CODECOV_PAGES_REPO_DIR}" checkout master -- "docs/${CODECOV_PAGES_THIS_PROJECT_NAME}" "history/${CODECOV_PAGES_THIS_PROJECT_NAME}" "badges/${CODECOV_PAGES_THIS_PROJECT_NAME}"
   # After partial checkout, unstage what git thinks are deletions
   #git -C "${CODECOV_PAGES_REPO_DIR}" ls-tree --name-only -z HEAD docs/ badges/ history/ | xargs --null git -C "${CODECOV_PAGES_REPO_DIR}" reset --
+  # Clear the docs folder, since the file names may change depending on the source code
+  rm -rf "${CODECOV_PAGES_REPO_DIR}/docs/${CODECOV_PAGES_THIS_PROJECT_NAME}"
 
-
-  # Download and install report generator, if needed
-  if [[ ! -f "${BASE_ROOT}/dotnet-tools/reportgenerator" ]]; then
-    docker run --rm \
-      -v "${BASE_ROOT}/dotnet-tools/:/dotnet-tools/:rw" \
-      "microsoft/dotnet:${DOTNET_VERSION}-sdk-alpine" \
-      dotnet tool install \
-      --tool-path /dotnet-tools/ \
-      --version 4.0.4 \
-      dotnet-reportgenerator-globaltool
-  fi
-  
   # Create HTML report from all the test projects
   docker run --rm \
     -v "${GIT_ROOT}/:/repo-dir/contents/:ro" \
