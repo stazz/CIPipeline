@@ -205,11 +205,26 @@ if [[ "$(ls -A ${CODECOV_REPORT_DIR})" ]]; then
   echo "docs/${CODECOV_PAGES_THIS_PROJECT_NAME}" > "${CODECOV_PAGES_REPO_DIR}/.git/info/sparse-checkout"
   echo "history/${CODECOV_PAGES_THIS_PROJECT_NAME}" >> "${CODECOV_PAGES_REPO_DIR}/.git/info/sparse-checkout"
   echo "badges/${CODECOV_PAGES_THIS_PROJECT_NAME}" >> "${CODECOV_PAGES_REPO_DIR}/.git/info/sparse-checkout"
-  GIT_SSH_COMMAND="${CODECOV_PAGES_GIT_SSH_COMMAND}" git -C "${CODECOV_PAGES_REPO_DIR}" pull --depth 1 origin master || echo 'Ignoring what hopefully is just a Sparse checkout leaves no entry on working directory -error.'
+  set +e
+  GIT_SSH_COMMAND="${CODECOV_PAGES_GIT_SSH_COMMAND}" git -C "${CODECOV_PAGES_REPO_DIR}" pull -q --depth 1 origin master 2>"${CODECOV_PAGES_REPO_DIR}/_git_error"
+  GIT_CLONE_EC=$?
+  set -e
+
+  if [[ $GIT_CLONE_EC -ne 0 ]]; then
+    if [[ "$(tac "${CODECOV_PAGES_REPO_DIR}/_git_error" | head -1)" == "error: Sparse checkout leaves no entry on working directory" ]]; then
+      # This project is new to repo, have to tweak a bit manually
+      git -C "${CODECOV_PAGES_REPO_DIR}" branch master origin/master
+      # Unstage what git thinks are deletions
+      git -C "${CODECOV_PAGES_REPO_DIR}" ls-tree --name-only -z HEAD docs/ badges/ history/ | xargs --null git -C "${CODECOV_PAGES_REPO_DIR}" reset --
+    else
+      # Some actual error
+      cat "${CODECOV_PAGES_REPO_DIR}/_git_error"
+      exit 1
+    fi
+  else
+    git -C "${CODECOV_PAGES_REPO_DIR}" checkout master -- "docs/${CODECOV_PAGES_THIS_PROJECT_NAME}" "history/${CODECOV_PAGES_THIS_PROJECT_NAME}" "badges/${CODECOV_PAGES_THIS_PROJECT_NAME}"
+  fi
   # GIT_SSH_COMMAND="${CODECOV_PAGES_GIT_SSH_COMMAND}" git clone --depth=1 --no-checkout "--filter=sparse:path=docs/${CODECOV_PAGES_THIS_PROJECT_NAME}:history/${CODECOV_PAGES_THIS_PROJECT_NAME}:badges/${CODECOV_PAGES_THIS_PROJECT_NAME}" "${CODECOV_PAGES_HOST_NAME}:${CODECOV_PAGES_USER_NAME}/${CODECOV_PAGES_REPO_NAME}" "${CODECOV_PAGES_REPO_DIR}"
-  git -C "${CODECOV_PAGES_REPO_DIR}" checkout master -- "docs/${CODECOV_PAGES_THIS_PROJECT_NAME}" "history/${CODECOV_PAGES_THIS_PROJECT_NAME}" "badges/${CODECOV_PAGES_THIS_PROJECT_NAME}"
-  # After partial checkout, unstage what git thinks are deletions
-  #git -C "${CODECOV_PAGES_REPO_DIR}" ls-tree --name-only -z HEAD docs/ badges/ history/ | xargs --null git -C "${CODECOV_PAGES_REPO_DIR}" reset --
   # Clear the docs folder, since the file names may change depending on the source code
   rm -rf "${CODECOV_PAGES_REPO_DIR}/docs/${CODECOV_PAGES_THIS_PROJECT_NAME}"
 
