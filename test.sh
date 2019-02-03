@@ -222,7 +222,12 @@ if [[ "$(ls -A ${CODECOV_REPORT_DIR})" ]]; then
       exit 1
     fi
   else
-    git -C "${CODECOV_PAGES_REPO_DIR}" checkout master -- "docs/${CODECOV_PAGES_THIS_PROJECT_NAME}" "history/${CODECOV_PAGES_THIS_PROJECT_NAME}" "badges/${CODECOV_PAGES_THIS_PROJECT_NAME}"
+    # Checkout one directory by one - in case some directory is not actually present (may happen when e.g. badges directory does not contain the project)
+    set +e
+    git -C "${CODECOV_PAGES_REPO_DIR}" checkout master -- "docs/${CODECOV_PAGES_THIS_PROJECT_NAME}"
+    git -C "${CODECOV_PAGES_REPO_DIR}" checkout master -- "history/${CODECOV_PAGES_THIS_PROJECT_NAME}"
+    git -C "${CODECOV_PAGES_REPO_DIR}" checkout master -- "badges/${CODECOV_PAGES_THIS_PROJECT_NAME}"
+    set -e
   fi
   # GIT_SSH_COMMAND="${CODECOV_PAGES_GIT_SSH_COMMAND}" git clone --depth=1 --no-checkout "--filter=sparse:path=docs/${CODECOV_PAGES_THIS_PROJECT_NAME}:history/${CODECOV_PAGES_THIS_PROJECT_NAME}:badges/${CODECOV_PAGES_THIS_PROJECT_NAME}" "${CODECOV_PAGES_HOST_NAME}:${CODECOV_PAGES_USER_NAME}/${CODECOV_PAGES_REPO_NAME}" "${CODECOV_PAGES_REPO_DIR}"
   # Clear the docs folder, since the file names may change depending on the source code
