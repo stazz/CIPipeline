@@ -31,39 +31,39 @@ namespace RedistListGenerator
    static class Program
    {
       // First arg - RedisList files base dir
-      // Second arg - The target frameworks that don't have their FrameworkList.xml generated
-      // Third arg - all possible .NET Desktop frameworks
-      // Fourth arg - values of FrameworkPathOverride-properties for each framework, in same order as third arg
+      // Second arg - all possible .NET Desktop frameworks
+      // Third arg - values of FrameworkPathOverride-properties for each framework, in same order as third arg
       public static void Main( String[] args )
       {
+         var baseDir = args[0];
          var tfList = args[1];
          var targetFrameworks = tfList.Split( ';', StringSplitOptions.RemoveEmptyEntries );
          if ( targetFrameworks.Length > 0 )
          {
-            var fpoList = args[3].Split( ';', StringSplitOptions.RemoveEmptyEntries );
-            var fpos = args[2].Split( ';', StringSplitOptions.RemoveEmptyEntries )
-               .Select( ( tfw, idx ) => (tfw, idx) )
-               .ToDictionary( tfw => tfw.tfw, tfw => fpoList[tfw.idx] );
-            var baseDir = args[0];
-
-            foreach ( var tf in targetFrameworks )
+            var fpoList = args[2].Split( ';', StringSplitOptions.RemoveEmptyEntries );
+            foreach ( var info in targetFrameworks
+               .Select( ( tfw, idx ) => (tfw, fpoList[idx], Path.Combine( baseDir, tfw, "FrameworkList.xml" )) )
+               .Where( tfw => !File.Exists( tfw.Item3 ) && Directory.Exists( tfw.Item2 ) )
+               )
             {
-               var fpo = fpos[tf];
+               (var tfw, var fpo, var path) = info;
                if ( !Path.IsPathRooted( fpo ) )
                {
                   throw new Exception( $"Unrooted FPO: {fpo}." );
                }
-               var xDoc = new XDocument( new XDeclaration( "1.0", "utf-8", null ), GenerateFileListElement( Path.GetFullPath( fpo ), tf ) );
-               var targetPath = Path.Combine( baseDir, tf, "FrameworkList.xml" );
-               var targetDir = Path.GetDirectoryName( targetPath );
+               var xDoc = new XDocument(
+                  new XDeclaration( "1.0", "utf-8", null ),
+                  GenerateFileListElement( Path.GetFullPath( fpo ), tfw )
+                  );
+
+               var targetDir = Path.GetDirectoryName( path );
                if ( !Directory.Exists( targetDir ) )
                {
                   Directory.CreateDirectory( targetDir );
                }
 
-               xDoc.Save( targetPath );
+               xDoc.Save( path );
             }
-
          }
       }
 
