@@ -1,75 +1,222 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Support for building with dotnet in Linux -->
+  <!-- Most of the stuff is related to building .NET Desktop projects, but at the very bottom is some common code for all the projects. -->
   <!-- We can't do this in Directory.Build.props, as NuGetPackageRoot property will evaluate to empty string there. -->
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net47' ">
-    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.7" Version="1.0.1" ExcludeAssets="All" PrivateAssets="All" />
-  </ItemGroup>
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net47' ">
-    <FrameworkPathOverride>$(NuGetPackageRoot)microsoft.targetingpack.netframework.v4.7\1.0.1\lib\net47\</FrameworkPathOverride>
-  </PropertyGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net471' ">
-    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.7.1" Version="1.0.0" ExcludeAssets="All" PrivateAssets="All" />
-  </ItemGroup>
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net471' ">
-    <FrameworkPathOverride>$(NuGetPackageRoot)microsoft.targetingpack.netframework.v4.7.1\1.0.0\lib\net471\</FrameworkPathOverride>
-  </PropertyGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net472' ">
-    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.7.2" Version="1.0.0" ExcludeAssets="All" PrivateAssets="All" />
-  </ItemGroup>
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net471' ">
-    <FrameworkPathOverride>$(NuGetPackageRoot)microsoft.targetingpack.netframework.v4.7.2\1.0.0\lib\net472\</FrameworkPathOverride>
-  </PropertyGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
-    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.6" Version="1.0.1" ExcludeAssets="All" PrivateAssets="All" />
-  </ItemGroup>
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net46' ">
-    <FrameworkPathOverride>$(NuGetPackageRoot)microsoft.targetingpack.netframework.v4.6\1.0.1\lib\net46\</FrameworkPathOverride>
-  </PropertyGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
-    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.6.1" Version="1.0.1" ExcludeAssets="All" PrivateAssets="All" />
-  </ItemGroup>
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net461' ">
-    <FrameworkPathOverride>$(NuGetPackageRoot)microsoft.targetingpack.netframework.v4.6.1\1.0.1\lib\net461\</FrameworkPathOverride>
-  </PropertyGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
-    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.6.2" Version="1.0.1" ExcludeAssets="All" PrivateAssets="All" />
-  </ItemGroup>
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net462' ">
-    <FrameworkPathOverride>$(NuGetPackageRoot)microsoft.targetingpack.netframework.v4.6.2\1.0.1\lib\net462\</FrameworkPathOverride>
-  </PropertyGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
-    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.5" Version="1.0.1" ExcludeAssets="All" PrivateAssets="All" />
-  </ItemGroup>
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net45' ">
-    <FrameworkPathOverride>$(NuGetPackageRoot)microsoft.targetingpack.netframework.v4.5\1.0.1\lib\net45\</FrameworkPathOverride>
-  </PropertyGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
-    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.5.1" Version="1.0.1" ExcludeAssets="All" PrivateAssets="All" />
-  </ItemGroup>
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net451' ">
-    <FrameworkPathOverride>$(NuGetPackageRoot)microsoft.targetingpack.netframework.v4.5.1\1.0.1\lib\net451\</FrameworkPathOverride>
-  </PropertyGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net452' ">
-    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.5.2" Version="1.0.1" ExcludeAssets="All" PrivateAssets="All" />
-  </ItemGroup>
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net452' ">
-    <FrameworkPathOverride>$(NuGetPackageRoot)microsoft.targetingpack.netframework.v4.5.2\1.0.1\lib\net452\</FrameworkPathOverride>
+  
+  <!-- 
+       The PackageReference items to Microsoft.TargetingPack packages are required in order to compile at all.
+       The RedistList item is required in order to emit correct .(dll|exe).config files.
+       The actual XML file which RedistList item points at needs to be generated on-the-fly, see RedistListGenerator in CIPipeline repo.
+  -->
+  
+  <PropertyGroup>
+    <Net40RefAssemblyDirName Condition=" '$(Net40RefAssemblyDirName)' == '' ">v4-ref-assemblies</Net40RefAssemblyDirName>
+    <RedistsListsSubDir Condition=" '$(RedistsListsSubDir)' == '' ">redistlists</RedistsListsSubDir>
+    <RedistListsBaseDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/../$(RedistsListsSubDir)'))</RedistListsBaseDir>
   </PropertyGroup>
   
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net40' ">
-    <Net40RefAssemblyDirName Condition=" '$(Net40RefAssemblyDirName)' == '' ">v4-ref-assemblies</Net40RefAssemblyDirName>
-    <FrameworkPathOverride>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)\..\$(Net40RefAssemblyDirName)'))\</FrameworkPathOverride>
-  </PropertyGroup>
-
+ 
   <PropertyGroup>
+    <!-- Package IDs -->
+    <PID_net45>Microsoft.TargetingPack.NETFramework.v4.5</PID_net45>
+    <PID_net451>Microsoft.TargetingPack.NETFramework.v4.5.1</PID_net451>
+    <PID_net452>Microsoft.TargetingPack.NETFramework.v4.5.2</PID_net452>
+    <PID_net46>Microsoft.TargetingPack.NETFramework.v4.6</PID_net46>
+    <PID_net461>Microsoft.TargetingPack.NETFramework.v4.6.1</PID_net461>
+    <PID_net462>Microsoft.TargetingPack.NETFramework.v4.6.2</PID_net462>
+    <PID_net47>Microsoft.TargetingPack.NETFramework.v4.7</PID_net47>
+    <PID_net471>Microsoft.TargetingPack.NETFramework.v4.7.1</PID_net471>
+    <PID_net472>Microsoft.TargetingPack.NETFramework.v4.7.2</PID_net472>
+    
+    <!-- Package versions -->
+    <PV_net45>1.0.1</PV_net45>
+    <PV_net451>1.0.1</PV_net451>
+    <PV_net452>1.0.1</PV_net452>
+    <PV_net46>1.0.1</PV_net46>
+    <PV_net461>1.0.1</PV_net461>
+    <PV_net462>1.0.1</PV_net462>
+    <PV_net47>1.0.1</PV_net47>
+    <PV_net471>1.0.0</PV_net471>
+    <PV_net472>1.0.0</PV_net472>
+    
+    <!-- FrameworkPathOverrides -->
+    <FPOR_net45>$(PID_net45)\$(PV_net45)\lib\net45\</FPOR_net45>
+    <FPOR_net451>$(PID_net451)\$(PV_net451)\lib\net451\</FPOR_net451>
+    <FPOR_net452>$(PID_net452)\$(PV_net452)\lib\net452\</FPOR_net452>
+    <FPOR_net46>$(PID_net46)\$(PV_net46)\lib\net46\</FPOR_net46>
+    <FPOR_net461>$(PID_net461)\$(PV_net461)\lib\net461\</FPOR_net461>
+    <FPOR_net462>$(PID_net462)\$(PV_net462)\lib\net462\</FPOR_net462>
+    <FPOR_net47>$(PID_net47)\$(PV_net47)\lib\net47\</FPOR_net47>
+    <FPOR_net471>$(PID_net471)\$(PV_net471)\lib\net471\</FPOR_net471>
+    <FPOR_net472>$(PID_net472)\$(PV_net472)\lib\net472\</FPOR_net472>
+    
+    <FPO_net40>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)\..\$(Net40RefAssemblyDirName)'))\</FPO_net40>
+    <FPO_net45>$(NuGetPackageRoot)$(FPOR_net45)</FPO_net45>
+    <FPO_net451>$(NuGetPackageRoot)$(FPOR_net451)</FPO_net451>
+    <FPO_net452>$(NuGetPackageRoot)$(FPOR_net452)</FPO_net452>
+    <FPO_net46>$(NuGetPackageRoot)$(FPOR_net46)</FPO_net46>
+    <FPO_net461>$(NuGetPackageRoot)$(FPOR_net461)</FPO_net461>
+    <FPO_net462>$(NuGetPackageRoot)$(FPOR_net462)</FPO_net462>
+    <FPO_net47>$(NuGetPackageRoot)$(FPOR_net47)</FPO_net47>
+    <FPO_net471>$(NuGetPackageRoot)$(FPOR_net471)</FPO_net471>
+    <FPO_net472>$(NuGetPackageRoot)$(FPOR_net472)</FPO_net472>
+  </PropertyGroup>
+   
+  <!-- Support for generating framework assembly list xml files on-the-fly. -->
+  <Target
+    Name="CheckGenerateRedistFrameworkLists"
+    AfterTargets="Restore"
+    Condition=" $([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', 'net(\d)+')) or $([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFrameworks)', 'net(\d)+')) "
+    >
+    <!-- This target generates, as needed, the FrameworkList.xml files used by ResolveAssemblyReference task so that correct .(dll|exe).config files would be generated under .NET Core running on Linux. -->
+    <ItemGroup>
+      <TFItem Include="$(TargetFramework)" />
+      <TFItem Include="$(TargetFrameworks)" />
+      <MissingTFItem Include="@(TFItem)" Condition=" $([System.Text.RegularExpressions.Regex]::IsMatch('%(Identity)', 'net(\d)+')) and !Exists('$(RedistListsBaseDir)/%(Identity)')" />
+    </ItemGroup>
+    
+    <PropertyGroup>
+      <MissingTFItemCount>@(MissingTFItem->Count())</MissingTFItemCount>
+    </PropertyGroup>
+    
+    <PropertyGroup Condition=" '$(MissingTFItemCount)' &gt; 0 ">
+      <RedistListGenOut>/repo-dir/redistgenout/</RedistListGenOut>
+      <CIPipelineDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/CIPipeline'))</CIPipelineDir>
+      <ThisTFM>$([System.Environment]::GetEnvironmentVariable('THIS_TFM'))</ThisTFM>
+    </PropertyGroup>
+    <!-- NuGetPackageRoot is not visible at this point so we have to do this ugly trick. -->
+    <MSBuild
+      Condition=" '$(MissingTFItemCount)' &gt; 0 "
+      Projects="$(MSBuildThisFileFullPath)"
+      Properties="CISupportNuGetGeneratedPropsFile=$(IntermediateOutputPath)$(MSBuildProjectFile).nuget.g.props"
+      Targets="CalledRecursively"
+      >
+      <Output
+        TaskParameter="TargetOutputs"
+        ItemName="NuGetPackageRootItem"
+        />
+    </MSBuild>
+    <PropertyGroup>
+      <NuGetPackageRootExtracted>@(NuGetPackageRootItem)</NuGetPackageRootExtracted>
+    </PropertyGroup>
+    <Copy
+      Condition=" '$(MissingTFItemCount)' &gt; 0 "
+      SourceFiles="$(MSBuildThisFileDirectory)/Source/Directory.Build.BuildTargetFolders.props"
+      DestinationFiles="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/../Directory.Build.props'))"
+      />
+    <Exec
+      Condition=" '$(MissingTFItemCount)' &gt; 0 "
+      Command="dotnet build -nologo /p:Configuration=Release &quot;/p:TargetFramework=$(ThisTFM)&quot; /p:BuildCommonOutputDir=$(RedistListGenOut) &quot;$(CIPipelineDir)/RedistListGenerator/&quot;"
+      />
+    <Exec
+      Condition=" '$(MissingTFItemCount)' &gt; 0 "
+      Command="dotnet &quot;$(RedistListGenOut)/Release/bin/RedistListGenerator/$(ThisTFM)/RedistListGenerator.dll&quot; &quot;$(RedistListsBaseDir)&quot; &quot;@(MissingTFItem)&quot; &quot;net40;net45;net451;net452;net46;net461;net462;net47;net471;net472&quot; &quot;$([MSBuild]::NormalizeDirectory('$(FPO_net40)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net45)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net451)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net452)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net46)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net461)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net462)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net47)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net471)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net472)'));&quot;"
+      />
+      
+  </Target>
+  
+  <Import Condition=" '$(CISupportNuGetGeneratedPropsFile)' != '' " Project="$(CISupportNuGetGeneratedPropsFile)" />
+  <Target
+    Name="CalledRecursively"
+    Outputs="$(NuGetPackageRoot)"
+    >
+  </Target>
+  
+  <!-- Support for finding the framework assemblies during compilation, for each framework. -->
+  
+  <!-- 
+    It would be great if this would work, but unfortunately when PropertyGroup is inside Project element, it can't access ItemGroups.
+    More info: https://stackoverflow.com/questions/14020789/using-msbuild-propertygroup-outside-of-target-block/14339180
+  -->
+  <!--
+  <ItemGroup Condition=" '$(TargetFramework)' != '' ">
+    <MatchingFrameworkPackageInfo 
+      Include="@(FrameworkPackageInfo->WithMetadataValue('Identity', '$(TargetFramework)'))" 
+      KeepMetadata="PackageID;PackageVersion;FrameworkPathOverride"
+      />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != '' and '@(MatchingFrameworkPackageInfo->Metadata('PackageID'))' != '' ">
+    <PackageReference Include="@(MatchingFrameworkPackageInfo->Metadata('PackageID'))" Version="%(PackageVersion)" ExcludeAssets="All" PrivateAssets="All" />
+  </ItemGroup>
+  <PropertyGroup>
+    <FrameworkPathOverride>%(MatchingFrameworkPackageInfo.FrameworkPathOverride)</FrameworkPathOverride>
+  </PropertyGroup>
+  -->
+  <!-- So, we have to do this manually. -->
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net47' ">
+    <FrameworkPathOverride>$(FPO_net47)</FrameworkPathOverride>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net47' ">
+    <PackageReference Include="$(PID_net47)" Version="$(PV_net47)" ExcludeAssets="All" PrivateAssets="All" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net471' ">
+    <FrameworkPathOverride>$(FPO_net471)</FrameworkPathOverride>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net471' ">
+    <PackageReference Include="$(PID_net471)" Version="$(PV_net471)" ExcludeAssets="All" PrivateAssets="All" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net471' ">
+    <FrameworkPathOverride>$(FPO_net472)</FrameworkPathOverride>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net472' ">
+    <PackageReference Include="$(PID_net472)" Version="$(PV_net472)" ExcludeAssets="All" PrivateAssets="All" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net46' ">
+    <FrameworkPathOverride>$(FPO_net46)</FrameworkPathOverride>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
+    <PackageReference Include="$(PID_net46)" Version="$(PV_net46)" ExcludeAssets="All" PrivateAssets="All" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net461' ">
+    <FrameworkPathOverride>$(FPO_net461)</FrameworkPathOverride>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
+    <PackageReference Include="$(PID_net461)" Version="$(PV_net461)" ExcludeAssets="All" PrivateAssets="All" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net462' ">
+    <FrameworkPathOverride>$(FPO_net462)</FrameworkPathOverride>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
+    <PackageReference Include="$(PID_net462)" Version="$(PV_net462)" ExcludeAssets="All" PrivateAssets="All" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net45' ">
+    <FrameworkPathOverride>$(FPO_net45)</FrameworkPathOverride>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
+    <PackageReference Include="$(PID_net45)" Version="$(PV_net45)" ExcludeAssets="All" PrivateAssets="All" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net451' ">
+    <FrameworkPathOverride>$(FPO_net451)</FrameworkPathOverride>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
+    <PackageReference Include="$(PID_net451)" Version="$(PV_net451)" ExcludeAssets="All" PrivateAssets="All" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net452' ">
+    <FrameworkPathOverride>$(FPO_net452)</FrameworkPathOverride>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net452' ">
+    <PackageReference Include="$(PID_net452)" Version="$(PV_net452)" ExcludeAssets="All" PrivateAssets="All" />
+  </ItemGroup>
+  
+  <!-- No targeting pack NuGet package for 4.0 (or older) -->
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net40' ">
+    <FrameworkPathOverride>$(FPO_net40)</FrameworkPathOverride>
+  </PropertyGroup>
+  
+  <ItemGroup Condition=" $([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', 'net(\d)+'))">
+    <!-- It seems the FrameworkDirectory metadata for this item is not required. -->
+    <RedistList Include="$(RedistListsBaseDir)/$(TargetFramework)/FrameworkList.xml" />
+  </ItemGroup>
+
+ <PropertyGroup>
     <PackageVersion Condition=" '$(PackageVersion)' != '' ">$(PackageVersion)+$(CIPackageVersionSuffix)</PackageVersion>
     <!-- Using SemVer 2.0.0 implies client version 4.3 or higher. Lower clients still might fail, as they read package version before min client version.
          See https://docs.microsoft.com/en-us/nuget/reference/errors-and-warnings/nu5105 , https://github.com/NuGet/Home/wiki/SemVer-2.0.0-support . -->
@@ -79,11 +226,23 @@
     <NoWarn>$(NoWarn);NU5105</NoWarn>
   </PropertyGroup>
 
-  <Target Condition=" '$(TargetFramework)' == 'net45' or '$(TargetFramework)' == 'net451' or '$(TargetFramework)' == 'net452'" Name="FixSystemXmlCasing" BeforeTargets="Build">
+  <!-- Fix the one assembly that has wrong case. -->
+  <Target
+    Condition=" '$(TargetFramework)' == 'net45' or '$(TargetFramework)' == 'net451' or '$(TargetFramework)' == 'net452'"
+    Name="FixSystemXmlCasing"
+    DependsOnTargets="GetFrameworkPaths"
+    BeforeTargets="ResolveAssemblyReferences"
+    >
+    <!-- FrameworkPathOverride, as well as NuGetPackageRoot is gone by now, so we must use differently named property. -->
+    <PropertyGroup>
+      <ActualTargetFrameworkDirectory>$(TargetFrameworkDirectory.Replace(';', ''))</ActualTargetFrameworkDirectory>
+      <WrongCasedPath>$(ActualTargetFrameworkDirectory)System.XML.dll</WrongCasedPath>
+      <CorrectCasedPath>$(ActualTargetFrameworkDirectory)System.Xml.dll</CorrectCasedPath>
+    </PropertyGroup>
     <Move
-      Condition="Exists('$(FrameworkPathOverride)System.XML.dll') and !Exists('$(FrameworkPathOverride)System.Xml.dll')"
-      SourceFiles="$(FrameworkPathOverride)System.XML.dll"
-      DestinationFiles="$(FrameworkPathOverride)System.Xml.dll"
+      Condition="Exists('$(WrongCasedPath)') and !Exists('$(CorrectCasedPath)')"
+      SourceFiles="$(WrongCasedPath)"
+      DestinationFiles="$(CorrectCasedPath)"
       />
   </Target>
 </Project>

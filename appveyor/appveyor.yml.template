@@ -6,6 +6,8 @@ cache:
   - 'nuget-package-dir'
   - 'docker-images'
   - 'dotnet-tools'
+  - 'redistlists'
+  
 skip_commits:
   files:
     - '**/*.md'
