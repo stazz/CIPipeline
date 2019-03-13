@@ -40,15 +40,15 @@
     <PV_net472>1.0.0</PV_net472>
     
     <!-- FrameworkPathOverrides -->
-    <FPOR_net45>$(PID_net45)\$(PV_net45)\lib\net45\</FPOR_net45>
-    <FPOR_net451>$(PID_net451)\$(PV_net451)\lib\net451\</FPOR_net451>
-    <FPOR_net452>$(PID_net452)\$(PV_net452)\lib\net452\</FPOR_net452>
-    <FPOR_net46>$(PID_net46)\$(PV_net46)\lib\net46\</FPOR_net46>
-    <FPOR_net461>$(PID_net461)\$(PV_net461)\lib\net461\</FPOR_net461>
-    <FPOR_net462>$(PID_net462)\$(PV_net462)\lib\net462\</FPOR_net462>
-    <FPOR_net47>$(PID_net47)\$(PV_net47)\lib\net47\</FPOR_net47>
-    <FPOR_net471>$(PID_net471)\$(PV_net471)\lib\net471\</FPOR_net471>
-    <FPOR_net472>$(PID_net472)\$(PV_net472)\lib\net472\</FPOR_net472>
+    <FPOR_net45>$(PID_net45.ToLower())\$(PV_net45)\lib\net45\</FPOR_net45>
+    <FPOR_net451>$(PID_net451.ToLower())\$(PV_net451)\lib\net451\</FPOR_net451>
+    <FPOR_net452>$(PID_net452.ToLower())\$(PV_net452)\lib\net452\</FPOR_net452>
+    <FPOR_net46>$(PID_net46.ToLower())\$(PV_net46)\lib\net46\</FPOR_net46>
+    <FPOR_net461>$(PID_net461.ToLower())\$(PV_net461)\lib\net461\</FPOR_net461>
+    <FPOR_net462>$(PID_net462.ToLower())\$(PV_net462)\lib\net462\</FPOR_net462>
+    <FPOR_net47>$(PID_net47.ToLower())\$(PV_net47)\lib\net47\</FPOR_net47>
+    <FPOR_net471>$(PID_net471.ToLower())\$(PV_net471)\lib\net471\</FPOR_net471>
+    <FPOR_net472>$(PID_net472.ToLower())\$(PV_net472)\lib\net472\</FPOR_net472>
     
     <FPO_net40>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)\..\$(Net40RefAssemblyDirName)'))\</FPO_net40>
     <FPO_net45>$(NuGetPackageRoot)$(FPOR_net45)</FPO_net45>
