@@ -98,6 +98,7 @@
     </MSBuild>
     <PropertyGroup>
       <NuGetPackageRootExtracted>@(NuGetPackageRootItem)</NuGetPackageRootExtracted>
+      <RedistListGeneratorCommand>dotnet '$(RedistListGenOut)/Release/bin/RedistListGenerator/$(ThisTFM)/RedistListGenerator.dll' '$(RedistListsBaseDir)' '@(MissingTFItem)' 'net40;net45;net451;net452;net46;net461;net462;net47;net471;net472' '$([MSBuild]::NormalizeDirectory('$(FPO_net40)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net45)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net451)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net452)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net46)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net461)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net462)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net47)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net471)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net472)'))'</RedistListGeneratorCommand>
     </PropertyGroup>
     <Copy
       Condition=" '$(MissingTFItemCount)' &gt; 0 "
@@ -108,9 +109,14 @@
       Condition=" '$(MissingTFItemCount)' &gt; 0 "
       Command="dotnet build -nologo /p:Configuration=Release &quot;/p:TargetFramework=$(ThisTFM)&quot; /p:BuildCommonOutputDir=$(RedistListGenOut) &quot;$(CIPipelineDir)/RedistListGenerator/&quot;"
       />
+    <Message
+      Condition=" '$(MissingTFItemCount)' &gt; 0 "
+      Text="Executing command $(RedistListGeneratorCommand)"
+      Importance="high"
+      />
     <Exec
       Condition=" '$(MissingTFItemCount)' &gt; 0 "
-      Command="dotnet &quot;$(RedistListGenOut)/Release/bin/RedistListGenerator/$(ThisTFM)/RedistListGenerator.dll&quot; &quot;$(RedistListsBaseDir)&quot; &quot;@(MissingTFItem)&quot; &quot;net40;net45;net451;net452;net46;net461;net462;net47;net471;net472&quot; &quot;$([MSBuild]::NormalizeDirectory('$(FPO_net40)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net45)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net451)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net452)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net46)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net461)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net462)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net47)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net471)'));$([MSBuild]::NormalizeDirectory('$(NuGetPackageRootExtracted)$(FPOR_net472)'));&quot;"
+      Command="$(RedistListGeneratorCommand)"
       />
       
   </Target>
