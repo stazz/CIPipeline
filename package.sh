@@ -16,6 +16,10 @@ if [[ "${RELATIVE_CS_OUTPUT}" ]]; then
   CS_OUTPUT=$(readlink -f "${BASE_ROOT}/${RELATIVE_CS_OUTPUT}")
 fi
 
+if [[ "${RELATIVE_REDIST_LISTS}" ]]; then
+  REDIST_LISTS=$(readlink -f "${BASE_ROOT}/${RELATIVE_REDIST_LISTS}")
+fi
+
 # Using dotnet build /t:Pack will cause re-build even with /p:GeneratePackageOnBuild=false /p:NoBuild=true flags, so just use dotnet pack instead
 GIT_COMMIT_HASH=$(git -C "${GIT_ROOT}" show-ref --hash HEAD)
 SUCCESS_DIR="${BASE_ROOT}/package-success"
@@ -63,6 +67,7 @@ docker run \
   -v "${GIT_ROOT}/:/repo-dir/contents/:ro" \
   -v "${CS_OUTPUT}/:/repo-dir/BuildTarget/:rw" \
   -v "${NUGET_PACKAGE_DIR}/:/root/.nuget/packages/:rw" \
+  -v "${REDIST_LISTS}/:/repo-dir/redistlists/:ro" \
   -v "${SUCCESS_DIR}/:/success/:rw" \
   "${ADDITIONAL_VOLUMES[@]}" \
   -u 0 \

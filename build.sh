@@ -30,6 +30,10 @@ if [[ "${RELATIVE_CS_OUTPUT}" ]]; then
   CS_OUTPUT=$(readlink -f "${BASE_ROOT}/${RELATIVE_CS_OUTPUT}")
 fi
 
+if [[ "${RELATIVE_REDIST_LISTS}" ]]; then
+  REDIST_LISTS=$(readlink -f "${BASE_ROOT}/${RELATIVE_REDIST_LISTS}")
+fi
+
 GIT_COMMIT_HASH=$(git -C "${GIT_ROOT}" show-ref --hash HEAD)
 # Originally build success dir was inside the CS_OUTPUT, but that caused MSB4024 issue with generated .nuget.g.props files (dotnet claimed that file did not exist) on Windows at least, so maybe Docker or other issue. In any case, this works when the build success dir is not inside the shared CS_OUTPUT.
 SUCCESS_DIR="${BASE_ROOT}/build-success"
@@ -72,6 +76,7 @@ docker run \
   -v "${CS_OUTPUT}/:/repo-dir/BuildTarget/:rw" \
   -v "${GIT_ROOT}/NuGet.Config.ci:/root/.nuget/NuGet/NuGet.Config:ro" \
   -v "${NUGET_PACKAGE_DIR}/:/root/.nuget/packages/:rw" \
+  -v "${REDIST_LISTS}/:/repo-dir/redistlists/:rw" \
   -v "${SUCCESS_DIR}/:/success/:rw" \
   "${ADDITIONAL_VOLUMES[@]}" \
   -u 0 \

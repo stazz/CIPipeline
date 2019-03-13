@@ -18,12 +18,13 @@ skip_commits:
 environment:
   RELATIVE_NUGET_PACKAGE_DIR: 'nuget-package-dir/'
   RELATIVE_CS_OUTPUT: 'output/'
+  RELATIVE_REDIST_LISTS: 'redistlists/'
   CI_FOLDER: 'CIPipeline'
   # Due the way AV clones repo when there is tag pushed, we lose information about the branch (e.g. master). So deploy whenever there is tag made, no matter which branch we are on.
   DEPLOYABLE_BRANCH: 'HEAD'
 
-  # Any additional readonly volumes that should be visible within docker
-#  ADDITIONAL_VOLUME_DIRECTORIES: 'v4-ref-assemblies'
+  # Any additional readonly volumes that should be visible within docker, add separated by whitespace
+  # ADDITIONAL_VOLUME_DIRECTORIES: 'v4-ref-assemblies'
 
 # The version of .NET Core (and Docker image)
   DOTNET_VERSION: '2.1'
