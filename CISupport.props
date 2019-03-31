@@ -163,7 +163,7 @@
     <PackageReference Include="$(PID_net471)" Version="$(PV_net471)" ExcludeAssets="All" PrivateAssets="All" />
   </ItemGroup>
 
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net471' ">
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net472' ">
     <FrameworkPathOverride>$(FPO_net472)</FrameworkPathOverride>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net472' ">
